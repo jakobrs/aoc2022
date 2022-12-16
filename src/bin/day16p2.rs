@@ -114,13 +114,13 @@ fn solve(input: &Input) -> usize {
         .map(|i| input.nodes[*i].pressure)
         .collect();
 
-    // try half of all subsets
-    let solutions: Vec<usize> = (0..1 << (pressurised_valves.len() - 1))
+    // try every subset
+    let solutions: Vec<usize> = (0..1 << pressurised_valves.len())
         .map(|denied| brute_force(0, pressurised_valves.len(), &dist_c, denied, &pressures))
         .collect();
 
     // bitmask for negation
-    let bitmask = (1 << (pressurised_valves.len() - 1)) - 1;
+    let bitmask = (1 << pressurised_valves.len()) - 1;
     // find optimal subset choice
     (0..1 << (pressurised_valves.len() - 1))
         .map(|i| solutions[i] + solutions[!i & bitmask])
