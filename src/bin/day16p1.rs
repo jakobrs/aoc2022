@@ -55,7 +55,7 @@ fn brute_force(
             let new_t = t + dist[i][j].0 + 1;
             if new_t <= 30 {
                 let a = brute_force(new_t, j, dist, seen | (1 << j), pressurised_valves, nodes)
-                    + (30 - new_t) * nodes[j].pressure as usize;
+                    + (30 - new_t) * nodes[j].pressure;
                 if a > best {
                     best = a;
                 }
@@ -93,16 +93,13 @@ fn solve(input: &Input) -> usize {
         }
     }
 
-    let best = brute_force(0, input.root, &dist, 0, &pressurised_valves, &input.nodes);
-
-    best
+    brute_force(0, input.root, &dist, 0, &pressurised_valves, &input.nodes)
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 struct Node {
     neighbours: SmallVec<[usize; 2]>,
-    pressure: u16,
-    index: u16,
+    pressure: usize,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -128,11 +125,10 @@ fn parse(input: &str) -> Input {
     }
 
     let mut nodes = vec![];
-    for (index, (neighbours, pressure)) in nodes_in_order.into_iter().enumerate() {
+    for (neighbours, pressure) in nodes_in_order {
         nodes.push(Node {
             neighbours: neighbours.map(|node| name_to_index[node]).collect(),
-            pressure: pressure,
-            index: index as u16,
+            pressure,
         });
     }
 

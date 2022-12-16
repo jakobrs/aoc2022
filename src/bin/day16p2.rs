@@ -111,11 +111,11 @@ fn solve(input: &Input) -> usize {
     // Mapping compressed index -> pressure
     let pressures: Vec<_> = pressurised_valves
         .iter()
-        .map(|i| input.nodes[*i].pressure as usize)
+        .map(|i| input.nodes[*i].pressure)
         .collect();
 
     // try half of all subsets
-    let solutions: Vec<usize> = (0..1 << pressurised_valves.len() - 1)
+    let solutions: Vec<usize> = (0..1 << (pressurised_valves.len() - 1))
         .map(|denied| brute_force(0, pressurised_valves.len(), &dist_c, denied, &pressures))
         .collect();
 
@@ -131,8 +131,7 @@ fn solve(input: &Input) -> usize {
 #[derive(Clone, PartialEq, Eq, Debug)]
 struct Node {
     neighbours: SmallVec<[usize; 2]>,
-    pressure: u16,
-    index: u16,
+    pressure: usize,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -158,11 +157,10 @@ fn parse(input: &str) -> Input {
     }
 
     let mut nodes = vec![];
-    for (index, (neighbours, pressure)) in nodes_in_order.into_iter().enumerate() {
+    for (neighbours, pressure) in nodes_in_order.into_iter() {
         nodes.push(Node {
             neighbours: neighbours.map(|node| name_to_index[node]).collect(),
-            pressure: pressure,
-            index: index as u16,
+            pressure,
         });
     }
 
