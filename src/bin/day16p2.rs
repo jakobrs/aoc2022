@@ -99,7 +99,6 @@ fn solve(input: &Input) -> usize {
     for (i, real_i) in pressurised_valves.iter().enumerate() {
         for (j, real_j) in pressurised_valves.iter().enumerate() {
             dist_c[i][j] = dist[*real_i][*real_j].0;
-            println!("{i} {j} {:?}", dist_c[i][j]);
         }
     }
     // include distances from root
