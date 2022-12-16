@@ -36,26 +36,22 @@ macro_rules! lazily {
 fn main() {
     let input = std::io::read_to_string(std::io::stdin()).unwrap();
     let input = parse(&input);
-    let a = solve(&input);
-    println!("{a}");
+    let answer = solve(&input);
+    println!("{answer}");
 }
 
-fn brute_force(
-    t: usize,
-    i: usize,
-    dist: &[Vec<Saturating<usize>>],
-    seen: usize,
-    pressurised_valves: &[usize],
-    nodes: &[Node],
-) -> usize {
+// t is the amount of time used, i is the node the player is currently located at,
+// dist[i][j] is the distance from vault i to j, seen is a bitset of all the vents that have been
+// seen, pressures is a mapping from vault index to the pressure released by that vault.
+fn brute_force(t: usize, i: usize, dist: &[Vec<usize>], seen: usize, pressures: &[usize]) -> usize {
     let mut best = 0;
 
-    for &j in pressurised_valves {
+    for j in 0..dist.len() - 1 {
         if (seen & (1 << j)) == 0 {
-            let new_t = t + dist[i][j].0 + 1;
-            if new_t <= 30 {
-                let a = brute_force(new_t, j, dist, seen | (1 << j), pressurised_valves, nodes)
-                    + (30 - new_t) * nodes[j].pressure as usize;
+            let new_t = t + dist[i][j] + 1;
+            if new_t <= 26 {
+                let a = brute_force(new_t, j, dist, seen | (1 << j), pressures)
+                    + (26 - new_t) * pressures[j];
                 if a > best {
                     best = a;
                 }
@@ -69,13 +65,16 @@ fn brute_force(
 fn solve(input: &Input) -> usize {
     let n = input.nodes.len();
 
+    // Create a distance matrix for Floyd-Warshall
     let mut dist = vec![vec![Saturating(usize::MAX); n]; n];
     for (index, Node { neighbours, .. }) in input.nodes.iter().enumerate() {
         for &i in neighbours {
             dist[index][i] = Saturating(1);
         }
+        dist[index][index] = Saturating(0);
     }
 
+    // Perform Floyd-Warshall
     for k in 0..n {
         for i in 0..n {
             for j in 0..n {
@@ -86,6 +85,7 @@ fn solve(input: &Input) -> usize {
         }
     }
 
+    // As a simplification, only look at the vaults which release pressure when opened
     let mut pressurised_valves = vec![];
     for (index, Node { pressure, .. }) in input.nodes.iter().enumerate() {
         if pressure > &0 {
@@ -93,9 +93,40 @@ fn solve(input: &Input) -> usize {
         }
     }
 
-    let best = brute_force(0, input.root, &dist, 0, &pressurised_valves, &input.nodes);
+    // "Compressed" distrance matrix
+    let mut dist_c = vec![vec![usize::MAX; pressurised_valves.len()]; pressurised_valves.len()];
 
-    best
+    for (i, real_i) in pressurised_valves.iter().enumerate() {
+        for (j, real_j) in pressurised_valves.iter().enumerate() {
+            dist_c[i][j] = dist[*real_i][*real_j].0;
+            println!("{i} {j} {:?}", dist_c[i][j]);
+        }
+    }
+    // include distances from root
+    let last_column = pressurised_valves
+        .iter()
+        .map(|i| dist[input.root][*i].0)
+        .collect();
+    dist_c.push(last_column);
+
+    // Mapping compressed index -> pressure
+    let pressures: Vec<_> = pressurised_valves
+        .iter()
+        .map(|i| input.nodes[*i].pressure as usize)
+        .collect();
+
+    // try half of all subsets
+    let solutions: Vec<usize> = (0..1 << pressurised_valves.len() - 1)
+        .map(|denied| brute_force(0, pressurised_valves.len(), &dist_c, denied, &pressures))
+        .collect();
+
+    // bitmask for negation
+    let bitmask = (1 << (pressurised_valves.len() - 1)) - 1;
+    // find optimal subset choice
+    (0..1 << (pressurised_valves.len() - 1))
+        .map(|i| solutions[i] + solutions[!i & bitmask])
+        .max()
+        .unwrap()
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -147,7 +178,5 @@ fn bench(bencher: &mut test::Bencher) {
     let input = include_str!("../../inputs/day16");
     let input = parse(input);
 
-    bencher.iter(|| {
-        test::black_box(solve(&input))
-    });
+    bencher.iter(|| test::black_box(solve(&input)));
 }
