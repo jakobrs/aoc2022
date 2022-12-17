@@ -6,32 +6,10 @@ extern crate test;
 
 use std::num::Saturating;
 
+use aoc2022::lazily;
 use regex::Regex;
 use rustc_hash::FxHashMap;
 use smallvec::SmallVec;
-
-// macro_rules! lazily {
-//     ($ty:ty, $expr:expr) => {{
-//         static LOCK: ::std::sync::LazyLock<$ty> = ::std::sync::LazyLock::new(|| $expr);
-
-//         &*LOCK
-//     }};
-// }
-
-macro_rules! lazily {
-    ($expr:expr) => {{
-        static LAZY: ::std::sync::LazyLock<
-            ::std::boxed::Box<
-                dyn ::std::any::Any + ::std::marker::Sync + ::std::marker::Send + 'static,
-            >,
-        > = ::std::sync::LazyLock::new(|| Box::new($expr));
-
-        fn infer_type<T>(_: fn() -> T) -> &'static T {
-            LAZY.downcast_ref().unwrap()
-        }
-        infer_type(|| $expr)
-    }};
-}
 
 fn main() {
     let input = std::io::read_to_string(std::io::stdin()).unwrap();
