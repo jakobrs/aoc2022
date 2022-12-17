@@ -43,23 +43,44 @@ fn main() {
 // t is the amount of time used, i is the node the player is currently located at,
 // dist[i][j] is the distance from vault i to j, seen is a bitset of all the vents that have been
 // seen, pressures is a mapping from vault index to the pressure released by that vault.
-fn brute_force(t: usize, i: usize, dist: &[Vec<usize>], seen: usize, pressures: &[usize]) -> usize {
+fn brute_force(
+    t: usize,
+    i: usize,
+    dist: &[Vec<usize>],
+    seen: usize,
+    pressures: &[usize],
+) -> (usize, usize) {
     let mut best = 0;
+    let mut best_used = 0;
 
     for j in 0..dist.len() - 1 {
         if (seen & (1 << j)) == 0 {
             let new_t = t + dist[i][j] + 1;
             if new_t <= 26 {
-                let a = brute_force(new_t, j, dist, seen | (1 << j), pressures)
-                    + (26 - new_t) * pressures[j];
+                let (mut a, mut used) = brute_force(new_t, j, dist, seen | (1 << j), pressures);
+                a += (26 - new_t) * pressures[j];
+                used |= 1 << j;
+
                 if a > best {
                     best = a;
+                    best_used = used;
                 }
             }
         }
     }
 
-    best
+    (best, best_used)
+}
+
+// calls `closure` on bitsets which are supersets of i, but subsets of i | extra
+fn for_all_valid_subsets(i: usize, extra: usize, closure: &mut impl FnMut(usize)) {
+    let one_pos = extra.trailing_zeros();
+    if one_pos >= 15 {
+        closure(i);
+    } else {
+        for_all_valid_subsets(i, extra & !(1 << one_pos), closure);
+        for_all_valid_subsets(i | (1 << one_pos), extra & !(1 << one_pos), closure);
+    }
 }
 
 fn solve(input: &Input) -> usize {
@@ -93,8 +114,10 @@ fn solve(input: &Input) -> usize {
         }
     }
 
+    let n_pressurised = pressurised_valves.len();
+
     // "Compressed" distrance matrix
-    let mut dist_c = vec![vec![usize::MAX; pressurised_valves.len()]; pressurised_valves.len()];
+    let mut dist_c = vec![vec![usize::MAX; n_pressurised]; n_pressurised];
 
     for (i, real_i) in pressurised_valves.iter().enumerate() {
         for (j, real_j) in pressurised_valves.iter().enumerate() {
@@ -114,13 +137,23 @@ fn solve(input: &Input) -> usize {
         .map(|i| input.nodes[*i].pressure)
         .collect();
 
-    // try every subset
-    let solutions: Vec<usize> = (0..1 << pressurised_valves.len())
-        .map(|denied| brute_force(0, pressurised_valves.len(), &dist_c, denied, &pressures))
-        .collect();
-
     // bitmask for negation
-    let bitmask = (1 << pressurised_valves.len()) - 1;
+    let bitmask = (1 << n_pressurised) - 1;
+
+    // Find optimal part 1 solution for each subset
+    let mut solutions = vec![usize::MAX; 1 << n_pressurised];
+
+    for i in 0..1 << n_pressurised {
+        if solutions[i] == usize::MAX {
+            let (optimum, used) = brute_force(0, n_pressurised, &dist_c, i, &pressures);
+            // extra represents the set of bits whose addition to `i` wouldn't change the outcome
+            let extra = bitmask & !i & !used;
+            for_all_valid_subsets(i, extra, &mut |j| {
+                solutions[j] = optimum;
+            });
+        }
+    }
+
     // find optimal subset choice
     (0..1 << (pressurised_valves.len() - 1))
         .map(|i| solutions[i] + solutions[!i & bitmask])
