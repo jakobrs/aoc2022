@@ -58,7 +58,7 @@ fn simulate(input: &[Direction]) -> usize {
                 let free = left / cycle_length;
                 let diff = height - old_height;
 
-                println!("Found cycle {j}..{i} of length {cycle_length} with diff {diff}, allows skipping {free} blocks");
+                println!("Found cycle {j}..{i} of length {cycle_length} with diff {diff}, allows skipping {free} cycles");
 
                 extra_height = diff * free;
                 i += cycle_length * free;
