@@ -177,7 +177,7 @@ fn parse(input: &str) -> Input {
     let regex = lazily!(Regex::new(r"[A-Z]{2}").unwrap());
     let digits = lazily!(Regex::new(r"\d+").unwrap());
 
-    let mut name_to_index: FxHashMap<&str, usize> = FxHashMap::default();
+    let mut name_to_index: FxHashMap<&str, usize> = <_>::default();
     let mut nodes_in_order = vec![];
     for (index, line) in input.lines().enumerate() {
         let pressure = digits.find(line).unwrap().as_str().parse().unwrap();
@@ -209,4 +209,11 @@ fn bench(bencher: &mut test::Bencher) {
     let input = parse(input);
 
     bencher.iter(|| test::black_box(solve(&input)));
+}
+
+#[bench]
+fn bench_parse(bencher: &mut test::Bencher) {
+    let input = include_str!("../../inputs/day16");
+
+    bencher.iter(|| test::black_box(parse(input)));
 }
