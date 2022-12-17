@@ -6,10 +6,12 @@ fn main() {
     println!("{result}");
 }
 
+const N_BLOCKS: usize = 2022;
+
 fn simulate(input: &[Direction]) -> usize {
     let mut movement = input.iter().copied().cycle();
 
-    let mut tower = vec![0u8; 4 * 2024];
+    let mut tower = vec![0u8; 2 * N_BLOCKS];
     tower[0] = 0xFF;
     let mut height = 1;
 
@@ -31,7 +33,7 @@ fn simulate(input: &[Direction]) -> usize {
         (0..4).any(|i| (shape[i] >> left) & region[i] != 0)
     }
 
-    for block in (0..2022).map(|i| i % 5) {
+    for block in (0..N_BLOCKS).map(|i| i % 5) {
         let shape = shapes[block];
         let mut pos = height + 3;
         let mut left = 2;
