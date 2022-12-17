@@ -52,6 +52,7 @@ fn solve(input: &Input) -> usize {
         for &i in neighbours {
             dist[index][i] = Saturating(1);
         }
+        dist[index][index] = Saturating(0);
     }
 
     for k in 0..n {
