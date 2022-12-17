@@ -1,3 +1,7 @@
+#![feature(test)]
+
+extern crate test;
+
 use std::{collections::HashMap, str::FromStr, time::Instant};
 
 use once_cell::sync::Lazy;
@@ -41,13 +45,17 @@ where
 }
 
 fn main() {
-    let start = Instant::now();
-
     let stdin = std::io::read_to_string(std::io::stdin()).unwrap();
+    let (monkeys, items) = parse(&stdin);
+    let business = solve(&monkeys, &items);
+
+    println!("{business}");
+}
+
+fn parse(stdin: &str) -> (Vec<Monkey>, Vec<(u64, usize)>) {
     let mut lines = stdin.lines();
 
     let mut monkeys = vec![];
-
     let mut items = vec![];
 
     let mut e = 0;
@@ -84,8 +92,10 @@ fn main() {
         });
     }
 
-    let after_parsing = Instant::now();
+    (monkeys, items)
+}
 
+fn solve(monkeys: &[Monkey], items: &[(u64, usize)]) -> usize {
     let modulus: u64 = monkeys
         .iter()
         .map(|&Monkey { divisor, .. }| divisor)
@@ -152,12 +162,15 @@ fn main() {
 
     count.sort();
 
-    let business: usize = count.iter().rev().take(2).product();
+    count.iter().rev().take(2).product()
+}
 
-    let end = Instant::now();
+#[bench]
+fn bench(bencher: &mut test::Bencher) {
+    let input = include_str!("../../inputs/day11");
+    let (monkeys, items) = parse(&input);
 
-    println!("Time spent parsing: {:?}", after_parsing - start);
-    println!("Time spent during calculation: {:?}", end - after_parsing);
-
-    println!("{business}");
+    bencher.iter(|| {
+        test::black_box(solve(&monkeys, &items))
+    })
 }
