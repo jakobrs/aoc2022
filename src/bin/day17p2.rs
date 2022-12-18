@@ -1,4 +1,8 @@
-use rustc_hash::{FxHashMap, FxHashSet};
+#![feature(test)]
+
+extern crate test;
+
+use rustc_hash::FxHashMap;
 
 fn main() {
     let input = std::io::read_to_string(std::io::stdin()).unwrap();
@@ -44,11 +48,10 @@ fn simulate(input: &[Direction]) -> usize {
     while i < N_BLOCKS {
         let block = i % 5;
 
-        if !skipped {
+        if !skipped && block == 0 {
             if let Some((j, old_height)) = states.insert(
                 (
                     tower[(height as usize).saturating_sub(SAFETY)..height].to_vec(),
-                    block,
                     movement.peek().unwrap().0 % input.len(),
                 ),
                 (i, height),
@@ -58,7 +61,7 @@ fn simulate(input: &[Direction]) -> usize {
                 let free = left / cycle_length;
                 let diff = height - old_height;
 
-                println!("Found cycle {j}..{i} of length {cycle_length} with diff {diff}, allows skipping {free} cycles");
+                // println!("Found cycle {j}..{i} of length {cycle_length} with diff {diff}, allows skipping {free} cycles");
 
                 extra_height = diff * free;
                 i += cycle_length * free;
@@ -127,6 +130,7 @@ enum Direction {
 
 fn parse(input: &str) -> Vec<Direction> {
     input
+        .trim()
         .bytes()
         .map(|ch| match ch {
             b'<' => Direction::Left,
@@ -134,4 +138,12 @@ fn parse(input: &str) -> Vec<Direction> {
             _ => panic!("invalid character in input"),
         })
         .collect()
+}
+
+#[bench]
+fn bench(bencher: &mut test::Bencher) {
+    let input = include_str!("../../inputs/day17");
+    let input = parse(input);
+
+    bencher.iter(|| test::black_box(simulate(&input)));
 }
