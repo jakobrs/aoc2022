@@ -4,6 +4,8 @@
 
 extern crate test;
 
+use std::collections::VecDeque;
+
 use aoc2022::lazily;
 use regex::Regex;
 
@@ -29,7 +31,8 @@ fn part2(input: &Input) -> usize {
         blocks_set[to_index(point.map(|i| (i - min) as usize))] = true;
     }
 
-    let mut stack = vec![[0, 0, 0]];
+    let mut queue = VecDeque::new();
+    queue.push_back([0, 0, 0]);
 
     #[rustfmt::skip]
     let neighbours = |[x, y, z]: [usize; 3]| std::iter::from_generator(move || {
@@ -44,17 +47,15 @@ fn part2(input: &Input) -> usize {
 
     let mut area = 0;
 
-    while let Some(point) = stack.pop() {
-        if visited[to_index(point)] {
-            continue;
-        }
-        visited[to_index(point)] = true;
-
+    while let Some(point) = queue.pop_front() {
         for neighbour in neighbours(point) {
             if blocks_set[to_index(neighbour)] {
                 area += 1;
             } else {
-                stack.push(neighbour);
+                if !visited[to_index(neighbour)] {
+                    queue.push_back(neighbour);
+                    visited[to_index(neighbour)] = true;
+                }
             }
         }
     }
