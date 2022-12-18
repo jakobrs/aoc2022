@@ -6,7 +6,6 @@ extern crate test;
 
 use aoc2022::lazily;
 use regex::Regex;
-use rustc_hash::FxHashSet;
 
 fn main() {
     let input = std::io::read_to_string(std::io::stdin()).unwrap();
@@ -17,46 +16,42 @@ fn main() {
 }
 
 fn part2(input: &Input) -> usize {
-    let min = input
-        .blocks
-        .iter()
-        .flat_map(|(x, y, z)| [x, y, z])
-        .min()
-        .unwrap()
-        - 1;
-    let max = input
-        .blocks
-        .iter()
-        .flat_map(|(x, y, z)| [x, y, z])
-        .max()
-        .unwrap()
-        + 1;
+    let min = input.blocks.iter().flatten().min().unwrap() - 1;
+    let max = input.blocks.iter().flatten().max().unwrap() + 1;
 
-    let blocks_set: FxHashSet<_> = input.blocks.iter().collect();
+    let side_length = (max - min + 1) as usize;
+    let to_index = |[x, y, z]: [usize; 3]| x + side_length * (y + side_length * z);
 
-    // let mut visited = vec![false; side_length * side_length * side_length];
-    let mut visited = FxHashSet::default();
-    let mut stack = vec![(min, min, min)];
+    let mut blocks_set = vec![false; side_length * side_length * side_length];
+    let mut visited = vec![false; side_length * side_length * side_length];
 
-    let neighbours = |(x, y, z)| std::iter::from_generator(move || {
-        if x > min { yield (x - 1, y, z) }
-        if y > min { yield (x, y - 1, z) }
-        if z > min { yield (x, y, z - 1) }
+    for point in &input.blocks {
+        blocks_set[to_index(point.map(|i| (i - min) as usize))] = true;
+    }
 
-        if x < max { yield (x + 1, y, z) }
-        if y < max { yield (x, y + 1, z) }
-        if z < max { yield (x, y, z + 1) }
+    let mut stack = vec![[0, 0, 0]];
+
+    #[rustfmt::skip]
+    let neighbours = |[x, y, z]: [usize; 3]| std::iter::from_generator(move || {
+        if x > 0 { yield [x - 1, y, z] }
+        if y > 0 { yield [x, y - 1, z] }
+        if z > 0 { yield [x, y, z - 1] }
+
+        if x + 1 < side_length { yield [x + 1, y, z] }
+        if y + 1 < side_length { yield [x, y + 1, z] }
+        if z + 1 < side_length { yield [x, y, z + 1] }
     });
 
     let mut area = 0;
 
     while let Some(point) = stack.pop() {
-        if !visited.insert(point) {
+        if visited[to_index(point)] {
             continue;
         }
+        visited[to_index(point)] = true;
 
         for neighbour in neighbours(point) {
-            if blocks_set.contains(&neighbour) {
+            if blocks_set[to_index(neighbour)] {
                 area += 1;
             } else {
                 stack.push(neighbour);
@@ -68,7 +63,7 @@ fn part2(input: &Input) -> usize {
 }
 
 struct Input {
-    blocks: Vec<(i32, i32, i32)>,
+    blocks: Vec<[i32; 3]>,
 }
 
 fn parse(input: &str) -> Input {
@@ -82,7 +77,7 @@ fn parse(input: &str) -> Input {
         let b: i32 = numbers.next().unwrap();
         let c: i32 = numbers.next().unwrap();
 
-        blocks.push((a, b, c));
+        blocks.push([a, b, c]);
     }
 
     Input { blocks }
