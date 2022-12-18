@@ -1,15 +1,12 @@
 #![feature(test)]
+#![feature(generators)]
+#![feature(iter_from_generator)]
 
 extern crate test;
 
-use std::{
-    collections::{HashMap, HashSet},
-    hash::{BuildHasher, BuildHasherDefault, Hash},
-};
-
 use aoc2022::lazily;
 use regex::Regex;
-use rustc_hash::{FxHashSet, FxHasher};
+use rustc_hash::FxHashSet;
 
 fn main() {
     let input = std::io::read_to_string(std::io::stdin()).unwrap();
@@ -36,55 +33,38 @@ fn part2(input: &Input) -> usize {
         + 1;
 
     let blocks_set: FxHashSet<_> = input.blocks.iter().collect();
-    let mut dsu = FxUnionFind::<(i32, i32, i32)>::default();
 
-    for x in min..=max {
-        for y in min..=max {
-            for z in min..=max {
-                if !blocks_set.contains(&(x, y, z)) {
-                    if !blocks_set.contains(&(x + 1, y, z)) {
-                        dsu.unite_by_key((x, y, z), (x + 1, y, z));
-                    }
-                    if !blocks_set.contains(&(x, y + 1, z)) {
-                        dsu.unite_by_key((x, y, z), (x, y + 1, z));
-                    }
-                    if !blocks_set.contains(&(x, y, z + 1)) {
-                        dsu.unite_by_key((x, y, z), (x, y, z + 1));
-                    }
-                }
+    // let mut visited = vec![false; side_length * side_length * side_length];
+    let mut visited = FxHashSet::default();
+    let mut stack = vec![(min, min, min)];
+
+    let neighbours = |(x, y, z)| std::iter::from_generator(move || {
+        if x > min { yield (x - 1, y, z) }
+        if y > min { yield (x, y - 1, z) }
+        if z > min { yield (x, y, z - 1) }
+
+        if x < max { yield (x + 1, y, z) }
+        if y < max { yield (x, y + 1, z) }
+        if z < max { yield (x, y, z + 1) }
+    });
+
+    let mut area = 0;
+
+    while let Some(point) = stack.pop() {
+        if !visited.insert(point) {
+            continue;
+        }
+
+        for neighbour in neighbours(point) {
+            if blocks_set.contains(&neighbour) {
+                area += 1;
+            } else {
+                stack.push(neighbour);
             }
         }
     }
 
-    let outside = dsu.find_by_key((min, min, min));
-
-    let mut sides = FxHashSet::default();
-
-    for x in min..=max {
-        for y in min..=max {
-            for z in min..=max {
-                if !blocks_set.contains(&(x, y, z)) && dsu.find_by_key((x, y, z)) == outside {
-                    swap(&mut sides, (2 * x - 1, 2 * y, 2 * z));
-                    swap(&mut sides, (2 * x + 1, 2 * y, 2 * z));
-                    swap(&mut sides, (2 * x, 2 * y - 1, 2 * z));
-                    swap(&mut sides, (2 * x, 2 * y + 1, 2 * z));
-                    swap(&mut sides, (2 * x, 2 * y, 2 * z - 1));
-                    swap(&mut sides, (2 * x, 2 * y, 2 * z + 1));
-                }
-            }
-        }
-    }
-
-    let box_side_length = max - min + 1;
-    let outside_box_surface_area = box_side_length.pow(2) * 6;
-
-    sides.len() - outside_box_surface_area as usize
-}
-
-fn swap<T: Eq + Hash + Copy, S: BuildHasher>(set: &mut HashSet<T, S>, value: T) {
-    if !set.insert(value) {
-        set.remove(&value);
-    }
+    area
 }
 
 struct Input {
@@ -106,75 +86,6 @@ fn parse(input: &str) -> Input {
     }
 
     Input { blocks }
-}
-
-#[derive(Default)]
-pub struct UnionFind<K, S: BuildHasher> {
-    node_mapping: HashMap<K, usize, S>,
-    parent: Vec<isize>,
-}
-
-type FxUnionFind<K> = UnionFind<K, BuildHasherDefault<FxHasher>>;
-
-impl<K: Eq + Hash, S: BuildHasher> UnionFind<K, S> {
-    pub fn with_hasher(hash_builder: S) -> Self {
-        Self {
-            node_mapping: HashMap::with_hasher(hash_builder),
-            parent: vec![],
-        }
-    }
-
-    pub fn find(&mut self, index: usize) -> usize {
-        if self.parent[index] < 0 {
-            index
-        } else {
-            let root = self.find(self.parent[index] as usize);
-            self.parent[index] = root as isize;
-            root
-        }
-    }
-
-    pub fn find_by_key(&mut self, key: K) -> usize {
-        let node = *self.node_mapping.entry(key).or_insert_with(|| {
-            self.parent.push(-1);
-            self.parent.len() - 1
-        });
-        self.find(node)
-    }
-
-    pub fn unite(&mut self, x: usize, y: usize) -> bool {
-        let mut x = self.find(x);
-        let mut y = self.find(y);
-
-        if x == y {
-            false
-        } else {
-            if -self.parent[x] < -self.parent[y] {
-                (x, y) = (y, x);
-            }
-
-            self.parent[x] += self.parent[y];
-            self.parent[y] = x as isize;
-
-            true
-        }
-    }
-
-    pub fn unite_by_key(&mut self, x: K, y: K) -> bool {
-        let x = self.find_by_key(x);
-        let y = self.find_by_key(y);
-        self.unite(x, y)
-    }
-
-    pub fn card(&mut self, x: usize) -> usize {
-        let root = self.find(x);
-        -self.parent[root] as usize
-    }
-
-    pub fn card_by_key(&mut self, x: K) -> usize {
-        let root = self.find_by_key(x);
-        -self.parent[root] as usize
-    }
 }
 
 #[bench]
