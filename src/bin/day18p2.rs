@@ -1,6 +1,6 @@
-#![feature(generators)]
-#![feature(iter_from_generator)]
-#![feature(slice_group_by)]
+#![feature(test)]
+
+extern crate test;
 
 use std::{
     collections::{HashMap, HashSet},
@@ -175,4 +175,12 @@ impl<K: Eq + Hash, S: BuildHasher> UnionFind<K, S> {
         let root = self.find_by_key(x);
         -self.parent[root] as usize
     }
+}
+
+#[bench]
+fn bench(bencher: &mut test::Bencher) {
+    let input = include_str!("../../inputs/day18");
+    let input = parse(input);
+
+    bencher.iter(|| test::black_box(part2(&input)));
 }
