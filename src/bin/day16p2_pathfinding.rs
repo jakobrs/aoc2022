@@ -3,11 +3,7 @@
 
 extern crate test;
 
-use std::{
-    cmp::Reverse,
-    collections::{BinaryHeap, VecDeque},
-    num::Saturating,
-};
+use std::{cmp::Reverse, collections::BinaryHeap, num::Saturating};
 
 use aoc2022::lazily;
 use regex::Regex;
@@ -53,8 +49,6 @@ fn not_brute_force(n_pressurised: usize, dist_c: &[Vec<usize>], pressures: &[usi
     }
 
     best_per_opened
-
-    // (best, best_opened)
 }
 
 // calls `closure` on bitsets which are supersets of i, but subsets of i | extra
@@ -182,7 +176,7 @@ fn parse(input: &str) -> Input {
     }
 }
 
-// #[bench]
+#[bench]
 fn bench(bencher: &mut test::Bencher) {
     let input = include_str!("../../inputs/day16");
     let input = parse(input);

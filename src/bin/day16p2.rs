@@ -181,7 +181,7 @@ fn parse(input: &str) -> Input {
     }
 }
 
-// #[bench]
+#[bench]
 fn bench(bencher: &mut test::Bencher) {
     let input = include_str!("../../inputs/day16");
     let input = parse(input);
