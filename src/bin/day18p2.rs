@@ -17,12 +17,14 @@ fn main() {
     println!("{result:?}");
 }
 
+type Point = [usize; 3];
+
 fn part2(input: &Input) -> usize {
     let min = input.blocks.iter().flatten().min().unwrap() - 1;
     let max = input.blocks.iter().flatten().max().unwrap() + 1;
 
     let side_length = (max - min + 1) as usize;
-    let to_index = |[x, y, z]: [usize; 3]| x + side_length * (y + side_length * z);
+    let to_index = |[x, y, z]: Point| x + side_length * (y + side_length * z);
 
     let mut blocks_set = vec![false; side_length * side_length * side_length];
     let mut visited = vec![false; side_length * side_length * side_length];
@@ -35,7 +37,7 @@ fn part2(input: &Input) -> usize {
     queue.push_back([0, 0, 0]);
 
     #[rustfmt::skip]
-    let neighbours = |[x, y, z]: [usize; 3]| std::iter::from_generator(move || {
+    let neighbours = |[x, y, z]: Point| std::iter::from_generator(move || {
         if x > 0 { yield [x - 1, y, z] }
         if y > 0 { yield [x, y - 1, z] }
         if z > 0 { yield [x, y, z - 1] }
