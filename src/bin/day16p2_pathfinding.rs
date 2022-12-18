@@ -1,10 +1,13 @@
-#![feature(once_cell)]
 #![feature(saturating_int_impl)]
 #![feature(test)]
 
 extern crate test;
 
-use std::{num::Saturating, collections::{VecDeque, BinaryHeap}, cmp::Reverse};
+use std::{
+    cmp::Reverse,
+    collections::{BinaryHeap, VecDeque},
+    num::Saturating,
+};
 
 use aoc2022::lazily;
 use regex::Regex;
@@ -18,11 +21,7 @@ fn main() {
     println!("{answer}");
 }
 
-fn not_brute_force(
-    n_pressurised: usize,
-    dist_c: &[Vec<usize>],
-    pressures: &[usize],
-) -> Vec<usize> {
+fn not_brute_force(n_pressurised: usize, dist_c: &[Vec<usize>], pressures: &[usize]) -> Vec<usize> {
     let mut max_released = vec![0; (1 << n_pressurised) * (n_pressurised + 1) * 27];
     let mut best_per_opened = vec![0; 1 << n_pressurised];
     let to_index = |time, position, opened| time + 27 * (position + (n_pressurised + 1) * opened);
@@ -42,7 +41,8 @@ fn not_brute_force(
                 let new_time = time + dist_c[position][neighbour] + 1;
 
                 if new_time <= 26 {
-                    let a = &mut max_released[to_index(new_time,neighbour,opened | 1 << neighbour)];
+                    let a =
+                        &mut max_released[to_index(new_time, neighbour, opened | 1 << neighbour)];
                     if *a == 0 {
                         queue.push((Reverse(new_time), neighbour, opened | 1 << neighbour));
                     }
