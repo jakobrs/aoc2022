@@ -12,15 +12,23 @@ fn main() {
 
     for i in 0..input.len() {
         let pos = input.iter().position(|&(j, _)| j == i).unwrap();
-        let (_, val) = input.remove(pos);
+        let val = input[pos].1;
+
         let new_pos = (pos + (val.rem_euclid(n as i32 - 1) as usize)).rem_euclid(n - 1);
-        input.insert(new_pos, (i, val));
+
+        if new_pos < pos {
+            input[new_pos..=pos].rotate_right(1);
+        } else {
+            input[pos..=new_pos].rotate_left(1);
+        }
     }
 
     // println!("{:?}", input.iter().map(|(_, j)| *j).collect::<Vec<_>>());
 
     let zero = input.iter().position(|&(_, x)| x == 0).unwrap();
-    let result: i32 = (1..=3).map(|i| input[(zero + 1000*i).rem_euclid(n)].1).sum();
+    let result: i32 = (1..=3)
+        .map(|i| input[(zero + 1000 * i).rem_euclid(n)].1)
+        .sum();
     println!("{result}");
 }
 
