@@ -1,15 +1,19 @@
+#![feature(test)]
+
 use rustc_hash::FxHashMap;
+
+extern crate test;
 
 fn main() {
     let input = std::io::read_to_string(std::io::stdin()).unwrap();
     let monkeys = parse(&input);
 
-    let answer = solve(monkeys);
+    let answer = solve(&monkeys);
 
     println!("{answer}");
 }
 
-fn solve(monkeys: FxHashMap<&str, Monkey>) -> i64 {
+fn solve(monkeys: &FxHashMap<&str, Monkey>) -> i64 {
     fn recurse<'a>(monkeys: &FxHashMap<&'a str, Monkey<'a>>, name: &'a str) -> Val {
         match monkeys[name] {
             Monkey::Int { value } => Val::Int { value },
@@ -44,8 +48,8 @@ fn solve(monkeys: FxHashMap<&str, Monkey>) -> i64 {
     }
 
     let Monkey::Operation { dep1, dep2, .. } = &monkeys["root"] else { panic!("root invalid") };
-    let lhs = recurse(&monkeys, dep1);
-    let rhs = recurse(&monkeys, dep2);
+    let lhs = recurse(monkeys, dep1);
+    let rhs = recurse(monkeys, dep2);
 
     let (mut value, operations) = match (lhs, rhs) {
         (Val::Int { value }, Val::Human { operations }) => (value, operations),
@@ -146,4 +150,12 @@ fn parse(input: &str) -> FxHashMap<&str, Monkey> {
             )
         })
         .collect()
+}
+
+#[bench]
+fn bench(bencher: &mut test::Bencher) {
+    let input = include_str!("../../inputs/day21");
+    let monkeys = parse(input);
+
+    bencher.iter(|| test::black_box(solve(&monkeys)));
 }
