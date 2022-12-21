@@ -158,10 +158,7 @@ impl<const N: usize> Div<f64> for Polynomial<N> {
 
     fn div(self, rhs: f64) -> Self::Output {
         Self {
-            coefficients: self.coefficients.map(|n| {
-                // assert!(n % rhs == 0);
-                n / rhs
-            }),
+            coefficients: self.coefficients.map(|n| n / rhs),
         }
     }
 }
