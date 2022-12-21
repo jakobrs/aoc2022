@@ -225,3 +225,10 @@ fn bench(bencher: &mut test::Bencher) {
 
     bencher.iter(|| test::black_box(solve(&monkeys)));
 }
+
+#[bench]
+fn bench_parser(bencher: &mut test::Bencher) {
+    let input = include_str!("../../inputs/day21");
+
+    bencher.iter(|| test::black_box(parse(input)));
+}
