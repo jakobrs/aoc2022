@@ -1,23 +1,29 @@
+#![feature(test)]
+
+extern crate test;
+
 use rustc_hash::FxHashSet;
 
 fn main() {
-    let mut elves = FxHashSet::default();
-
-    // (row, column)
-    let mut n_elves = 0;
     let input = std::io::read_to_string(std::io::stdin()).unwrap();
+
+    let result = solve(&input);
+    println!("{result}");
+}
+
+fn solve(input: &str) -> usize {
+    // (row, column)
+    let mut elves = FxHashSet::default();
     for (r, line) in input.lines().enumerate() {
         for (c, ch) in line.chars().enumerate() {
             if ch == '#' {
                 elves.insert((r as i64, c as i64));
-                n_elves += 1;
             }
         }
     }
 
+    let mut new_pos = FxHashSet::default();
     for i in 0.. {
-        let mut new_pos = FxHashSet::default();
-
         'elves: for &(r, c) in &elves {
             let mut should_move = false;
             'outer: for rd in -1..=1 {
@@ -96,12 +102,14 @@ fn main() {
         }
 
         if new_pos == elves {
-            println!("{}", i + 1);
-            break;
+            return i + 1;
         }
 
-        elves = new_pos;
+        std::mem::swap(&mut elves, &mut new_pos);
+        new_pos.clear();
     }
+
+    unreachable!()
 }
 
 fn vis(elves: &FxHashSet<(i64, i64)>) {
@@ -130,4 +138,11 @@ fn vis(elves: &FxHashSet<(i64, i64)>) {
     for row in grid {
         println!("{}", std::str::from_utf8(&row).unwrap());
     }
+}
+
+#[bench]
+fn bench(bencher: &mut test::Bencher) {
+    let input = include_str!("../../inputs/day23");
+
+    bencher.iter(|| test::black_box(solve(input)));
 }
