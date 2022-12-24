@@ -2,7 +2,7 @@
 
 extern crate test;
 
-use std::{cmp::Reverse, collections::BinaryHeap, io::BufRead};
+use std::{cmp::Reverse, collections::BinaryHeap};
 
 use anyhow::Result;
 use rustc_hash::FxHashSet;
@@ -50,8 +50,8 @@ fn solve(stdin: &str) -> usize {
             };
 
             for t in 0..period {
-                let r1 = r + rd*t;
-                let c1 = c + cd*t;
+                let r1 = r + rd * t;
+                let c1 = c + cd * t;
                 let (r1, c1) = normalise(r1, c1);
                 blocked[to_index(t, r1, c1)] = true;
             }
