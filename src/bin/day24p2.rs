@@ -31,12 +31,12 @@ fn main() -> Result<()> {
         stdin[r * (width + 1) + c]
     };
 
-    let fastest_from_to = |from: (usize, usize), to: (usize, usize)| {
+    let fastest_from_to = |start: usize, from: (usize, usize), to: (usize, usize)| {
         let mut frontier = vec![];
         let mut next = vec![];
         let mut marked = FxHashSet::default();
 
-        for t in 1.. {
+        for t in start + 1.. {
             frontier.push(from);
 
             while let Some((r, c)) = frontier.pop() {
@@ -80,9 +80,11 @@ fn main() -> Result<()> {
         unreachable!()
     };
 
-    let solution = fastest_from_to((0, 1), (height - 2, width - 2));
+    let part1 = fastest_from_to(0, (0, 1), (height - 2, width - 2));
+    let part2 = fastest_from_to(part1, (height - 1, width - 2), (1, 1));
+    let part3 = fastest_from_to(part2, (0, 1), (height - 2, width - 2));
 
-    println!("{solution}");
+    println!("{part3}");
 
     Ok(())
 }
