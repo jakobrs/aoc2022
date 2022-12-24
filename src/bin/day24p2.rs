@@ -1,19 +1,27 @@
 #![feature(generators)]
 #![feature(iter_from_generator)]
+#![feature(test)]
+
+extern crate test;
 
 use anyhow::Result;
-use rustc_hash::{FxHashMap, FxHashSet};
+use rustc_hash::FxHashSet;
 
 fn main() -> Result<()> {
-    let stdin = std::io::read_to_string(std::io::stdin())?.into_bytes();
+    let stdin = std::io::read_to_string(std::io::stdin())?;
+
+    println!("{}", solve(&stdin));
+    Ok(())
+}
+
+fn solve(stdin: &str) -> usize {
+    let stdin = stdin.as_bytes();
     let width = stdin.iter().position(|&ch| ch == b'\n').unwrap();
     let height = (stdin.len() + 1) / (width + 1);
     let h_per = width - 2;
     let v_per = height - 2;
 
     let buf = v_per * h_per * 1000;
-
-    println!("{width} {height}");
 
     let neighbours = |r: usize, c: usize| {
         [(r - 1, c), (r, c - 1), (r + 1, c), (r, c + 1), (r, c)]
@@ -84,7 +92,12 @@ fn main() -> Result<()> {
     let part2 = fastest_from_to(part1, (height - 1, width - 2), (1, 1));
     let part3 = fastest_from_to(part2, (0, 1), (height - 2, width - 2));
 
-    println!("{part3}");
+    part3
+}
 
-    Ok(())
+#[bench]
+fn bench(bencher: &mut test::Bencher) {
+    let input = include_str!("../../inputs/day24");
+
+    bencher.iter(|| test::black_box(solve(input)));
 }
