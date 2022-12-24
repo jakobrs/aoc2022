@@ -2,6 +2,8 @@
 
 extern crate test;
 
+use std::{cmp::Reverse, collections::BinaryHeap};
+
 use anyhow::Result;
 use rustc_hash::FxHashSet;
 
@@ -38,49 +40,53 @@ fn solve(stdin: &str) -> usize {
     };
 
     let fastest_from_to = |start: usize, from: (usize, usize), to: (usize, usize)| {
-        let mut frontier = vec![];
-        let mut next = vec![];
+        let h = |(r, c): (usize, usize)| r.abs_diff(to.0) + c.abs_diff(to.1);
+
+        let mut unvisited = BinaryHeap::new();
         let mut marked = FxHashSet::default();
 
-        for t in start + 1.. {
-            frontier.push(from);
+        let min_dist = h(from);
 
-            while let Some((r, c)) = frontier.pop() {
-                if (r, c) == to {
-                    return t;
+        unvisited.push((Reverse(min_dist), start, from));
+
+        while let Some((_, t, (r, c))) = unvisited.pop() {
+            let t = t + 1;
+
+            if (r, c) == to {
+                // println!("{n_visited}");
+                return t;
+            }
+
+            for (r1, c1) in neighbours(r, c) {
+                if !marked.insert((t, r1, c1)) {
+                    continue;
                 }
 
-                for (r1, c1) in neighbours(r, c) {
-                    if !marked.insert((r1, c1)) {
-                        continue;
+                // this could've been a single expression but rustfmt didn't like it ...
+                let valid = 'a: {
+                    if read(r1 + t, c1) == b'^' {
+                        break 'a false;
                     }
-
-                    // this could've been a single expression but rustfmt didn't like it ...
-                    let valid = 'a: {
-                        if read(r1 + t, c1) == b'^' {
-                            break 'a false;
-                        }
-                        if read(r1, c1 + t) == b'<' {
-                            break 'a false;
-                        }
-                        if read(r1 + buf - t, c1) == b'v' {
-                            break 'a false;
-                        }
-                        if read(r1, c1 + buf - t) == b'>' {
-                            break 'a false;
-                        }
-                        true
-                    };
-
-                    if valid {
-                        next.push((r1, c1));
+                    if read(r1, c1 + t) == b'<' {
+                        break 'a false;
                     }
+                    if read(r1 + buf - t, c1) == b'v' {
+                        break 'a false;
+                    }
+                    if read(r1, c1 + buf - t) == b'>' {
+                        break 'a false;
+                    }
+                    true
+                };
+
+                if valid {
+                    unvisited.push((Reverse(t + h((r1, c1))), t, (r1, c1)));
                 }
             }
 
-            std::mem::swap(&mut frontier, &mut next);
-            next.clear();
-            marked.clear();
+            if (r, c) == from {
+                unvisited.push((Reverse(t + min_dist), t, from));
+            }
         }
 
         unreachable!()
