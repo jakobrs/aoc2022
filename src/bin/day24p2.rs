@@ -1,5 +1,3 @@
-#![feature(generators)]
-#![feature(iter_from_generator)]
 #![feature(test)]
 
 extern crate test;

@@ -1,8 +1,5 @@
-#![feature(generators)]
-#![feature(iter_from_generator)]
-
 use anyhow::Result;
-use rustc_hash::{FxHashMap, FxHashSet};
+use rustc_hash::FxHashSet;
 
 fn main() -> Result<()> {
     let stdin = std::io::read_to_string(std::io::stdin())?.into_bytes();
