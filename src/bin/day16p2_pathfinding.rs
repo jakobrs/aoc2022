@@ -3,12 +3,14 @@
 
 extern crate test;
 
-use std::{cmp::Reverse, collections::BinaryHeap, num::Saturating};
+use std::num::Saturating;
 
 use aoc2022::lazily;
 use regex::Regex;
 use rustc_hash::FxHashMap;
 use smallvec::SmallVec;
+
+const MINUTES: usize = 26;
 
 fn main() {
     let input = std::io::read_to_string(std::io::stdin()).unwrap();
@@ -18,31 +20,35 @@ fn main() {
 }
 
 fn not_brute_force(n_pressurised: usize, dist_c: &[Vec<usize>], pressures: &[usize]) -> Vec<usize> {
-    let mut max_released = vec![0; (1 << n_pressurised) * (n_pressurised + 1) * 27];
+    let mut max_released = vec![0; (1 << n_pressurised) * (n_pressurised + 1) * (MINUTES + 1)];
     let mut best_per_opened = vec![0; 1 << n_pressurised];
-    let to_index = |time, position, opened| time + 27 * (position + (n_pressurised + 1) * opened);
+    let to_index =
+        |time, position, opened| time + (MINUTES + 1) * (position + (n_pressurised + 1) * opened);
 
     max_released[to_index(0, n_pressurised, 0)] = 0;
-    let mut queue = BinaryHeap::new();
-    queue.push((Reverse(0), n_pressurised, 0));
 
-    while let Some((Reverse(time), position, opened)) = queue.pop() {
-        let released = max_released[to_index(time, position, opened)];
-        best_per_opened[opened] = best_per_opened[opened].max(released);
+    let mut stacks = vec![vec![]; MINUTES + 1];
+    stacks[0].push((n_pressurised, 0));
 
-        // println!("{time:>2} {position:>2} {opened:0>15b} {released:>4}");
+    for time in 0..=MINUTES {
+        while let Some((position, opened)) = stacks[time].pop() {
+            let released = max_released[to_index(time, position, opened)];
+            best_per_opened[opened] = best_per_opened[opened].max(released);
 
-        for neighbour in 0..n_pressurised {
-            if opened & (1 << neighbour) == 0 {
-                let new_time = time + dist_c[position][neighbour] + 1;
+            // println!("{time:>2} {position:>2} {opened:0>15b} {released:>4}");
 
-                if new_time <= 26 {
-                    let a =
-                        &mut max_released[to_index(new_time, neighbour, opened | 1 << neighbour)];
-                    if *a == 0 {
-                        queue.push((Reverse(new_time), neighbour, opened | 1 << neighbour));
+            for neighbour in 0..n_pressurised {
+                if opened & (1 << neighbour) == 0 {
+                    let new_time = time + dist_c[position][neighbour] + 1;
+
+                    if new_time <= MINUTES {
+                        let a = &mut max_released
+                            [to_index(new_time, neighbour, opened | 1 << neighbour)];
+                        if *a == 0 {
+                            stacks[new_time].push((neighbour, opened | 1 << neighbour));
+                        }
+                        *a = (*a).max(released + (MINUTES - new_time) * pressures[neighbour]);
                     }
-                    *a = (*a).max(released + (26 - new_time) * pressures[neighbour]);
                 }
             }
         }
