@@ -1,8 +1,16 @@
+#![feature(test)]
+
+extern crate test;
+
 use regex::Regex;
 
 fn main() {
     let input = std::io::read_to_string(std::io::stdin()).unwrap();
 
+    println!("{}", solve(&input));
+}
+
+fn solve(input: &str) -> usize {
     let grid: Vec<&[u8]> = input.lines().take(200).map(|s| s.as_bytes()).collect();
 
     let commands = input.lines().skip(4 * 50 + 1).next().unwrap();
@@ -117,5 +125,12 @@ fn main() {
     }
 
     let (x, y) = get_abs_pos(pos, face);
-    println!("{}", (y + 1) * 1000 + (x + 1) * 4 + facing);
+    (y + 1) * 1000 + (x + 1) * 4 + facing
+}
+
+#[bench]
+fn bench(bencher: &mut test::Bencher) {
+    let input = include_str!("../../inputs/day22");
+
+    bencher.iter(|| test::black_box(solve(input)));
 }
