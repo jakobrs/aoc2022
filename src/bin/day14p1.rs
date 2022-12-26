@@ -1,9 +1,13 @@
 #![feature(test)]
 #![feature(iter_array_chunks)]
+#![feature(slice_flatten)]
 
 extern crate test;
 
-use std::ops::{Index, IndexMut};
+use std::{
+    ops::{Index, IndexMut},
+    process::{ChildStdin, Command, Stdio, Child}, io::Write,
+};
 
 use bitvec::prelude::*;
 use regex::Regex;
@@ -44,56 +48,116 @@ impl Index<Point> for Grid {
 //     }
 // }
 
-fn drop(grid: &mut Grid, r: usize, c: usize) -> usize {
+struct Display {
+    frame: [[[u8; 3]; WIDTH]; HEIGHT],
+    child: Child,
+    file: ChildStdin,
+}
+
+impl Display {
+    fn new() -> Self {
+        let video_size = format!("{WIDTH}x{HEIGHT}");
+        let mut child = Command::new("ffmpeg")
+            .args([
+                "-loglevel",
+                "warning",
+                "-stats",
+                "-f",
+                "rawvideo",
+                "-pixel_format",
+                "rgb24",
+                "-video_size",
+                &video_size,
+                "-framerate",
+                "30",
+                "-i",
+                "-",
+                "-pix_fmt",
+                "yuv420p",
+                "output.mp4",
+            ])
+            .stdin(Stdio::piped())
+            .spawn()
+            .unwrap();
+
+        let file = child.stdin.take().unwrap();
+
+        Self {
+            frame: [[[0; 3]; WIDTH]; HEIGHT],
+            child,
+            file,
+        }
+    }
+
+    fn emit_frame(&mut self) -> std::io::Result<()> {
+        self.file.write_all(self.frame.flatten().flatten())
+    }
+}
+
+fn drop(display: &mut Display, grid: &mut Grid, r: usize, c: usize) -> usize {
     let mut n = 0;
+
+    display.frame[r][c] = [255, 0, 0];
+    display.emit_frame().unwrap();
 
     if r == 199 {
         return n;
     }
 
     if !grid[(r + 1, c)] {
-        n += drop(grid, r + 1, c);
+        n += drop(display, grid, r + 1, c);
 
         if !grid[(r + 1, c)] {
+            display.frame[r][c] = [20, 20, 20];
+            display.emit_frame().unwrap();
             return n;
         }
     }
 
     if !grid[(r + 1, c - 1)] {
-        n += drop(grid, r + 1, c - 1);
+        n += drop(display, grid, r + 1, c - 1);
 
         if !grid[(r + 1, c - 1)] {
+            display.frame[r][c] = [20, 20, 20];
+            display.emit_frame().unwrap();
             return n;
         }
     }
 
     if !grid[(r + 1, c + 1)] {
-        n += drop(grid, r + 1, c + 1);
+        n += drop(display, grid, r + 1, c + 1);
 
         if !grid[(r + 1, c + 1)] {
+            display.frame[r][c] = [20, 20, 20];
+            display.emit_frame().unwrap();
             return n;
         }
     }
 
     // only fill in cell if all three cells below it are also filled
     grid.set((r, c), true);
+    display.frame[r][c] = [0, 255, 0];
+    display.emit_frame().unwrap();
 
     return n + 1;
 }
 
 fn main() {
     let stdin = std::io::read_to_string(std::io::stdin()).unwrap();
+    let mut display = Display::new();
 
-    println!("{}", drop(&mut inner(&stdin), 0, 500));
+    let mut grid = inner(&mut display, &stdin);
+
+    println!("{}", drop(&mut display, &mut grid, 0, 500));
 }
 
-fn inner(stdin: &str) -> Grid {
+fn inner(display: &mut Display, stdin: &str) -> Grid {
     let mut grid = Grid {
         // cells: Box::new([false; HEIGHT * WIDTH]),
         cells: Box::new(BitArray::new([0u8; WIDTH * HEIGHT / 8])),
     };
 
-    let mut lines: Vec<&str> = stdin.lines().collect();
+    let lines: Vec<&str> = stdin.lines().collect();
     // lines.sort();
     // lines.dedup();
 
@@ -123,6 +187,7 @@ fn inner(stdin: &str) -> Grid {
                 for c in c_min..=c_max {
                     // grid[(r, c)] = true;
                     grid.set((r, c), true);
+                    display.frame[r][c].fill(255);
                 }
             }
 
@@ -130,22 +195,24 @@ fn inner(stdin: &str) -> Grid {
         }
     }
 
+    display.emit_frame().unwrap();
+
     grid
 }
 
 // drop(&mut grid, 0, 500)
 
-#[bench]
-fn bench(bencher: &mut Bencher) {
-    let stdin = std::include_str!("../../inputs/day14");
+// #[bench]
+// fn bench(bencher: &mut Bencher) {
+//     let stdin = std::include_str!("../../inputs/day14");
 
-    bencher.iter(|| test::black_box(drop(&mut inner(&stdin), 0, 500)))
-}
+//     bencher.iter(|| test::black_box(drop(&mut inner(&stdin), 0, 500)))
+// }
 
-#[bench]
-fn bench_1(bencher: &mut Bencher) {
-    let stdin = std::include_str!("../../inputs/day14");
-    let parsed = inner(&stdin);
+// #[bench]
+// fn bench_1(bencher: &mut Bencher) {
+//     let stdin = std::include_str!("../../inputs/day14");
+//     let parsed = inner(&stdin);
 
-    bencher.iter(|| test::black_box(drop(&mut parsed.clone(), 0, 500)))
-}
+//     bencher.iter(|| test::black_box(drop(&mut parsed.clone(), 0, 500)))
+// }
