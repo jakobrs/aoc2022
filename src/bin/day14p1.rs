@@ -5,8 +5,9 @@
 extern crate test;
 
 use std::{
+    io::Write,
     ops::{Index, IndexMut},
-    process::{ChildStdin, Command, Stdio, Child}, io::Write,
+    process::{Child, ChildStdin, Command, Stdio},
 };
 
 use bitvec::prelude::*;
@@ -72,6 +73,8 @@ impl Display {
                 "30",
                 "-i",
                 "-",
+                "-vf",
+                "crop=200:200:400:200,scale=iw*4:-1:flags=neighbor",
                 "-pix_fmt",
                 "yuv420p",
                 "output.mp4",
@@ -101,6 +104,8 @@ fn drop(display: &mut Display, grid: &mut Grid, r: usize, c: usize) -> usize {
     display.emit_frame().unwrap();
 
     if r == 199 {
+        display.frame[r][c] = [50, 50, 50];
+        display.emit_frame().unwrap();
         return n;
     }
 
@@ -108,7 +113,7 @@ fn drop(display: &mut Display, grid: &mut Grid, r: usize, c: usize) -> usize {
         n += drop(display, grid, r + 1, c);
 
         if !grid[(r + 1, c)] {
-            display.frame[r][c] = [20, 20, 20];
+            display.frame[r][c] = [50, 50, 50];
             display.emit_frame().unwrap();
             return n;
         }
@@ -118,7 +123,7 @@ fn drop(display: &mut Display, grid: &mut Grid, r: usize, c: usize) -> usize {
         n += drop(display, grid, r + 1, c - 1);
 
         if !grid[(r + 1, c - 1)] {
-            display.frame[r][c] = [20, 20, 20];
+            display.frame[r][c] = [50, 50, 50];
             display.emit_frame().unwrap();
             return n;
         }
@@ -128,7 +133,7 @@ fn drop(display: &mut Display, grid: &mut Grid, r: usize, c: usize) -> usize {
         n += drop(display, grid, r + 1, c + 1);
 
         if !grid[(r + 1, c + 1)] {
-            display.frame[r][c] = [20, 20, 20];
+            display.frame[r][c] = [50, 50, 50];
             display.emit_frame().unwrap();
             return n;
         }
